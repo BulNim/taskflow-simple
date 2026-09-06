@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>업무 관리</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 40px auto; padding: 0 16px; }
+  h1 { font-size: 24px; }
+  form { display: flex; gap: 8px; margin-bottom: 20px; }
+  input { flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 6px; }
+  button { padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; background: #fff; cursor: pointer; }
+  li { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #eee; }
+  ul { list-style: none; padding: 0; }
+  .done .title { text-decoration: line-through; color: #888; }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #eee; }
+  .title { flex: 1; }
+</style>
+</head>
+<body>
+<h1>업무 관리</h1>
+<form id="addForm">
+  <input id="titleInput" placeholder="할 일을 입력하세요" required>
+  <button type="submit">추가</button>
+</form>
+<ul id="list"></ul>
+<script>
+// 업무 목록 불러오기
+async function load() {
+  const res = await fetch('/api/tasks');
+  const tasks = await res.json();
+  render(tasks);
+}
+
+// 화면 그리기
+function render(tasks) {
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  tasks.forEach((task) => {
+    const li = document.createElement('li');
+    li.className = task.status === 'done' ? 'done' : '';
+    li.innerHTML = `
+      <span class="badge">${task.status === 'done' ? '완료' : '진행중'}</span>
+      <span class="title">${task.title}</span>
+      <button data-act="toggle" data-id="${task.id}">상태 변경</button>
+      <button data-act="delete" data-id="${task.id}">삭제</button>`;
+    list.appendChild(li);
+  });
+}
+
+// 업무 추가
+document.getElementById('addForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = document.getElementById('titleInput');
+  await fetch('/api/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: input.value }),
+  });
+  input.value = '';
+  load();
+});
+
+// 상태 변경 / 삭제
+document.getElementById('list').addEventListener('click', async (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  if (btn.dataset.act === 'delete') {
+    await fetch(`/api/tasks/${id}`, { method: 'DELETE' });
+  } else {
+    const cur = btn.closest('li').classList.contains('done') ? 'todo' : 'done';
+    await fetch(`/api/tasks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: cur }),
+    });
+  }
+  load();
+});
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# 의존성
+node_modules/
+
+# 실행 중 생성되는 데이터 / 로그
+tasks.json
+*.log
+
+# 환경 변수
+.env
+
+# 에디터 / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
